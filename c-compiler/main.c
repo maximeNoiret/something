@@ -4,6 +4,7 @@
 #include <string.h>
 
 #define output stdout
+#define SYMB_LIM 64
 
 typedef struct Symbol {
   char name[32];
@@ -75,7 +76,7 @@ int main(int argc, char **argv) {
 
   unsigned current_sp = symbol_size;
   unsigned symbol_counts = 0;
-  Symbol symbols[64];
+  Symbol symbols[SYMB_LIM];
 
   unsigned line_count = 1;
   // SECOND PASS for the REAL code. (this is so bad help)
@@ -97,7 +98,7 @@ int main(int argc, char **argv) {
       }
       else if (wrd == 2 && strcasecmp(buffer[0], "if") == 0) {    // if statement
         // TODO: conditional tri-branching
-        puts("if statement");
+        puts("[TODO] if statement");
       }
       else if (wrd == 3 && buffer[2][0] == '=') {                 // variable creation
         // TODO: check if symbol exists
@@ -107,11 +108,22 @@ int main(int argc, char **argv) {
         // TODO: get rid of that icky strcpy ;-;
         strcpy(symbols[symbol_counts].name, buffer[1]);
         symbols[symbol_counts++].offset = current_sp;
-        fprintf(output, "ori $t0, $zero, %s\nsw $t0, %d($sp)\n", buffer[3], current_sp);
+        fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[3], current_sp);
       }
       else if (wrd == 2 && buffer[1][0] == '=') {                 // variable set
         // TODO: variable value replace/set
-        puts("var set statement");
+        // get offset
+        unsigned offset = -1;
+        for (unsigned i = 0; i < SYMB_LIM && symbols[i].name[0] != '\0'; ++i) {
+          if (strcmp(symbols[i].name, buffer[0]) == 0) {
+            offset = symbols[i].offset;
+          }
+        }
+        if (offset == -1) {
+          fprintf(stderr, "Something went wrong: Unknown variable.\n\tLine: %d\n\t'%s'\n", line_count, buffer[0]);
+          return -1;
+        }
+        fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[0], offset);
       }
       else {
         fprintf(stderr, "Something went wrong: Unrecognizable Syntax.\n\tLine: %d\n\t", line_count);
