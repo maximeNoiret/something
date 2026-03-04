@@ -40,8 +40,7 @@ int main(int argc, char **argv) {
         fputs("\nori $v0, $zero, 10\nsyscall\n", output);
       }
       else if (wrd == 1 && strcasecmp(buffer[0], "goto") == 0) {
-        // TODO: unconditional goto
-        puts("goto statement");
+        fprintf(output, "j %s\n", buffer[1]);
       }
       else if (wrd == 2 && strcasecmp(buffer[0], "if") == 0) {
         // TODO: conditional tri-branching
