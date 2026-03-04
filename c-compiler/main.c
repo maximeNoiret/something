@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <string.h>
 
+#define output stdout
+
 
 // NOTE: the compiler will not have functions until I actually implement that in the compiler. This is so that bootstrapping is easier.
 // Apologies in advance for the (probably) messy code that will ensue from this choice.
@@ -28,17 +30,15 @@ int main(int argc, char **argv) {
   unsigned wrd = 0;
   for (int in = fgetc(file); in != EOF && col < 32; in = fgetc(file)) {
     if (in == '#') {
-      while (in != '\n') in = fgetc(file);
+      while (in != '\n' && in != EOF) in = fgetc(file);
     }
     if (in == ';' || in == ':') {
-      printf("%d: ", line_count);
       if (in == ':') {
         // TODO: label management
         puts("label");
       }
       else if (strcasecmp(buffer[0], "exit") == 0) {
-        // TODO: exit syscall
-        puts("exit statement");
+        fputs("\nori $v0, $zero, 10\nsyscall\n", output);
       }
       else if (strcasecmp(buffer[0], "goto") == 0) {
         // TODO: unconditional goto
