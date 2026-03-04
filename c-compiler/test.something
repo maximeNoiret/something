@@ -1,6 +1,7 @@
 # comments are python style
 
 int var = 10;
+int var2 = 16;
 
 # tri-branching is negative,zero,positive
 if var label1,label2,label3;

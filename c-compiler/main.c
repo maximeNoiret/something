@@ -5,6 +5,11 @@
 
 #define output stdout
 
+typedef struct Symbol {
+  char name[32];
+  unsigned offset;
+} Symbol;
+
 
 // NOTE: the compiler will not have functions until I actually implement that in the compiler. This is so that bootstrapping is easier.
 // Apologies in advance for the (probably) messy code that will ensue from this choice.
@@ -25,32 +30,86 @@ int main(int argc, char **argv) {
   for (unsigned word = 0; word < 5; ++word) {
     memset(buffer[word], 0, 32);
   }
-  unsigned line_count = 1;
+
   unsigned col = 0;
   unsigned wrd = 0;
+  
+  unsigned symbol_size = 0;
+  // FIRST PASS for symbol_size. (yes, really. A WHOLE PASS just for one value. Awesome :3)
   for (int in = fgetc(file); in != EOF && col < 32; in = fgetc(file)) {
     if (in == '#') {
       while (in != '\n' && in != EOF) in = fgetc(file);
     }
     if (in == ';' || in == ':') {
-      if (in == ':') {
+      // only interested in var definition.
+      if (wrd == 3 && buffer[2][0] == '=') {
+        // TODO: change this with actual type size. For now everything is int.
+        symbol_size += 4;
+      }
+      for (unsigned word = 0; word <= wrd; ++word) {
+        memset(buffer[word], 0, 32);
+      }
+      col = 0;
+      wrd = 0;
+      continue;
+    }
+    switch (in) {
+      case '\n':
+      case ' ':
+      case '\t':
+        if (col > 0) {
+          ++wrd;
+          col = 0;
+        }
+        break;
+      default:
+        buffer[wrd][col++] = (char)in;
+    }
+  }
+
+  for (unsigned word = 0; word < 5; ++word) {
+    memset(buffer[word], 0, 32);
+  }
+  col = 0;
+  wrd = 0;
+
+  unsigned current_sp = symbol_size;
+  unsigned symbol_counts = 0;
+  Symbol symbols[64];
+
+  unsigned line_count = 1;
+  // SECOND PASS for the REAL code. (this is so bad help)
+  fseek(file, 0, 0);  // reset cursor
+  fprintf(output, "\naddi $sp, $sp, -%d\n\n", symbol_size);
+  for (int in = fgetc(file); in != EOF && col < 32; in = fgetc(file)) {
+    if (in == '#') {
+      while (in != '\n' && in != EOF) in = fgetc(file);
+    }
+    if (in == ';' || in == ':') {
+      if (in == ':') {                                            // label
         fprintf(output, "\n%s:\n", buffer[0]);
       }
-      else if (wrd == 0 && strcasecmp(buffer[0], "exit") == 0) {
+      else if (wrd == 0 && strcasecmp(buffer[0], "exit") == 0) {  // exit
         fputs("\nori $v0, $zero, 10\nsyscall\n", output);
       }
-      else if (wrd == 1 && strcasecmp(buffer[0], "goto") == 0) {
+      else if (wrd == 1 && strcasecmp(buffer[0], "goto") == 0) {  // goto
         fprintf(output, "j %s\n", buffer[1]);
       }
-      else if (wrd == 2 && strcasecmp(buffer[0], "if") == 0) {
+      else if (wrd == 2 && strcasecmp(buffer[0], "if") == 0) {    // if statement
         // TODO: conditional tri-branching
         puts("if statement");
       }
-      else if (wrd == 3 && buffer[2][0] == '=') {
-        // TODO: variable creation
-        puts("var def statement");
+      else if (wrd == 3 && buffer[2][0] == '=') {                 // variable creation
+        // TODO: check if symbol exists
+        // TODO: differentiate variable types and sizes. FOR NOW everything is int (4 bytes).
+
+        current_sp -= 4;
+        // TODO: get rid of that icky strcpy ;-;
+        strcpy(symbols[symbol_counts].name, buffer[1]);
+        symbols[symbol_counts++].offset = current_sp;
+        fprintf(output, "ori $t0, $zero, %s\nsw $t0, %d($sp)\n", buffer[3], current_sp);
       }
-      else if (wrd == 2 && buffer[1][0] == '=') {
+      else if (wrd == 2 && buffer[1][0] == '=') {                 // variable set
         // TODO: variable value replace/set
         puts("var set statement");
       }
