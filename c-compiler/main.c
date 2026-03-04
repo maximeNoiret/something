@@ -96,12 +96,32 @@ int main(int argc, char **argv) {
       else if (wrd == 1 && strcasecmp(buffer[0], "goto") == 0) {  // goto
         fprintf(output, "j %s\n", buffer[1]);
       }
-      else if (wrd == 2 && strcasecmp(buffer[0], "if") == 0) {    // if statement
-        // TODO: conditional tri-branching
-        puts("[TODO] if statement");
+      else if (wrd == 4 && strcasecmp(buffer[0], "if") == 0) {    // if statement
+        // get offset
+        unsigned offset = -1;
+        for (unsigned i = 0; i < SYMB_LIM && symbols[i].name[0] != '\0'; ++i) {
+          if (strcmp(symbols[i].name, buffer[1]) == 0) {
+            offset = symbols[i].offset;
+          }
+        }
+        if (offset == -1) {
+          fprintf(stderr, "Something went wrong: Unknown variable.\n\tLine: %d\n\t'%s'\n", line_count, buffer[1]);
+          return -1;
+        }
+        fprintf(output, "\nlw  $t0, %d($sp)\nbltz $t0, %s\nbgtz $t0, %s\nbeq $t0, $zero, %s\n", offset, buffer[2], buffer[4], buffer[3]);
       }
       else if (wrd == 3 && buffer[2][0] == '=') {                 // variable creation
-        // TODO: check if symbol exists
+        // get offset
+        unsigned offset = -1;
+        for (unsigned i = 0; i < SYMB_LIM && symbols[i].name[0] != '\0'; ++i) {
+          if (strcmp(symbols[i].name, buffer[1]) == 0) {
+            offset = symbols[i].offset;
+          }
+        }
+        if (offset != -1) {
+          fprintf(stderr, "Something went wrong: Variable exists.\n\tLine: %d\n\t'%s'\n", line_count, buffer[1]);
+          return -1;
+        }
         // TODO: differentiate variable types and sizes. FOR NOW everything is int (4 bytes).
 
         current_sp -= 4;
@@ -111,7 +131,6 @@ int main(int argc, char **argv) {
         fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[3], current_sp);
       }
       else if (wrd == 2 && buffer[1][0] == '=') {                 // variable set
-        // TODO: variable value replace/set
         // get offset
         unsigned offset = -1;
         for (unsigned i = 0; i < SYMB_LIM && symbols[i].name[0] != '\0'; ++i) {

@@ -4,11 +4,11 @@ int var = 10;
 int var2 = 16;
 
 # tri-branching is negative,zero,positive
-if var label1,label2,label3;
+if var label1 label2 label3;
 
 label1:
 var = 0;
-if var label1,label2,label3;
+if var label1 label2 label3;
 
 label2:
 goto end;
