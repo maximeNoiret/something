@@ -23,25 +23,59 @@ int main(int argc, char **argv) {
   for (unsigned word = 0; word < 5; ++word) {
     memset(buffer[word], 0, 32);
   }
+  unsigned line_count = 1;
   unsigned col = 0;
   unsigned wrd = 0;
   for (int in = fgetc(file); in != EOF && col < 32; in = fgetc(file)) {
-    if (in == ';') {
-      // TODO: treat instruction
+    if (in == '#') {
+      while (in != '\n') in = fgetc(file);
+    }
+    if (in == ';' || in == ':') {
+      printf("%d: ", line_count);
+      if (in == ':') {
+        // TODO: label management
+        puts("label");
+      }
+      else if (strcasecmp(buffer[0], "exit") == 0) {
+        // TODO: exit syscall
+        puts("exit statement");
+      }
+      else if (strcasecmp(buffer[0], "goto") == 0) {
+        // TODO: unconditional goto
+        puts("goto statement");
+      }
+      else if (strcasecmp(buffer[0], "if") == 0) {
+        // TODO: conditional tri-branching
+        puts("if statement");
+      }
+      else if (buffer[2][0] == '=') {
+        // TODO: variable creation
+        puts("var def statement");
+      }
+      else if (buffer[1][0] == '=') {
+        // TODO: variable value replace/set
+        puts("var set statement");
+      }
+      else {
+        fprintf(stderr, "Something went wrong: Unrecognizable Syntax.\n\tLine: %d\n\t", line_count);
+        for (unsigned word = 0; word <= wrd; ++word) {
+          fputs(buffer[word], stderr);
+        }
+        fputc('\n', stderr);
+        return -1;
+      }
       for (unsigned word = 0; word <= wrd; ++word) {
-        printf("%s", buffer[word]);
-        if (word != wrd) putc(',', stdout);
         memset(buffer[word], 0, 32);
       }
-      printf("\n");
       col = 0;
       wrd = 0;
       continue;
     }
     switch (in) {
+      case '\n':
+        ++line_count;
       case ' ':
       case '\t':
-      case '\n':
         if (col > 0) {
           ++wrd;
           col = 0;
@@ -51,5 +85,6 @@ int main(int argc, char **argv) {
         buffer[wrd][col++] = (char)in;
     }
   }
+  fclose(file);
   return 0;
 }
