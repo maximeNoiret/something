@@ -34,8 +34,7 @@ int main(int argc, char **argv) {
     }
     if (in == ';' || in == ':') {
       if (in == ':') {
-        // TODO: label management
-        puts("label");
+        fprintf(output, "\n%s:\n", buffer[0]);
       }
       else if (wrd == 0 && strcasecmp(buffer[0], "exit") == 0) {
         fputs("\nori $v0, $zero, 10\nsyscall\n", output);
