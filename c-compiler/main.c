@@ -40,26 +40,26 @@ int main(int argc, char **argv) {
       else if (wrd == 0 && strcasecmp(buffer[0], "exit") == 0) {
         fputs("\nori $v0, $zero, 10\nsyscall\n", output);
       }
-      else if (strcasecmp(buffer[0], "goto") == 0) {
+      else if (wrd == 1 && strcasecmp(buffer[0], "goto") == 0) {
         // TODO: unconditional goto
         puts("goto statement");
       }
-      else if (strcasecmp(buffer[0], "if") == 0) {
+      else if (wrd == 2 && strcasecmp(buffer[0], "if") == 0) {
         // TODO: conditional tri-branching
         puts("if statement");
       }
-      else if (buffer[2][0] == '=') {
+      else if (wrd == 3 && buffer[2][0] == '=') {
         // TODO: variable creation
         puts("var def statement");
       }
-      else if (buffer[1][0] == '=') {
+      else if (wrd == 2 && buffer[1][0] == '=') {
         // TODO: variable value replace/set
         puts("var set statement");
       }
       else {
         fprintf(stderr, "Something went wrong: Unrecognizable Syntax.\n\tLine: %d\n\t", line_count);
         for (unsigned word = 0; word <= wrd; ++word) {
-          fputs(buffer[word], stderr);
+          fprintf(stderr, "%s ", buffer[word]);
         }
         fputc('\n', stderr);
         return -1;
