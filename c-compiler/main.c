@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
           fprintf(stderr, "Something went wrong: Unknown variable.\n\tLine: %d\n\t'%s'\n", line_count, buffer[0]);
           return -1;
         }
-        fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[0], offset);
+        fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[2], offset);
       }
       else {
         fprintf(stderr, "Something went wrong: Unrecognizable Syntax.\n\tLine: %d\n\t", line_count);
