@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         // TODO: label management
         puts("label");
       }
-      else if (strcasecmp(buffer[0], "exit") == 0) {
+      else if (wrd == 0 && strcasecmp(buffer[0], "exit") == 0) {
         fputs("\nori $v0, $zero, 10\nsyscall\n", output);
       }
       else if (strcasecmp(buffer[0], "goto") == 0) {
