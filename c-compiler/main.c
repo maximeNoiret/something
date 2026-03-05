@@ -133,7 +133,25 @@ int main(int argc, char **argv) {
 
         // TODO: do more types
         if (strcasecmp(buf, "int") == 0) {
-          fprintf(output, "# print %s\naddi $sp, $sp, -8\nsw  $v0, 4($sp)\nsw  $a0, 0($sp)\nori $v0, $zero, 1\nlw  $a0, %d($sp)\nsyscall\n# newline\nori $v0, $zero, 11\nori  $a0, $zero, 10\nsyscall\nlw  $a0, 0($sp)\nlw  $v0, 4($sp)\naddi $sp, $sp, 8\n", buffer[1], offset+8);
+          fprintf(output, "# print %s\naddi $sp, $sp, -8\nsw  $v0, 4($sp)\nsw  $a0, 0($sp)\nori $v0, $zero, 1\nlw  $a0, %d($sp)\nsyscall\n# newline\nori $v0, $zero, 11\nori $a0, $zero, 10\nsyscall\nlw  $a0, 0($sp)\nlw  $v0, 4($sp)\naddi $sp, $sp, 8\n", buffer[1], offset+8);
+        }
+      }
+      else if (wrd == 1 && strcasecmp(buffer[0], "input") == 0) { // input
+        unsigned offset = getVariableOffset(buffer[1]);
+        if (offset == -1) {
+          fprintf(stderr, "Something went wrong: Unknown variable.\n\tLine: %d\n\t'%s'\n", line_count, buffer[1]);
+          return -1;
+        }
+        char buf[16];
+        getVariableType(buffer[1], buf);
+        if (strcmp(buf, "null") == 0) {
+          fprintf(stderr, "Something went wrong: Type is null.\n\tLine: %d\n\t'%s'\n", line_count, buffer[1]);
+          return -1;
+        }
+
+        // TODO: do more types
+        if (strcasecmp(buf, "int") == 0) {
+          fprintf(output, "# input %s\naddi $sp, $sp, -4\nsw  $v0, 0($sp)\nori $v0, $zero, 5\nsyscall\nsw  $v0, %d($sp)\nlw  $v0, 0($sp)\naddi $sp, $sp, 4\n", buffer[1], offset+4);
         }
       }
       else if (wrd == 4 && strcasecmp(buffer[0], "if") == 0) {    // if statement
@@ -145,8 +163,7 @@ int main(int argc, char **argv) {
         fprintf(output, "# if %s\nlw  $t0, %d($sp)\nbltz $t0, %s\nbgtz $t0, %s\nbeq  $t0, $zero, %s\n", buffer[1], offset, buffer[2], buffer[4], buffer[3]);
       }
       else if (wrd == 3 && buffer[2][0] == '=') {                 // variable creation
-        unsigned offset = getVariableOffset(buffer[1]);
-        if (offset != -1) {
+        if (getVariableOffset(buffer[1]) != -1) {
           fprintf(stderr, "Something went wrong: Variable exists.\n\tLine: %d\n\t'%s'\n", line_count, buffer[1]);
           return -1;
         }
@@ -155,7 +172,10 @@ int main(int argc, char **argv) {
         current_sp -= 4;  // TODO: different size per type.
         // TODO: get rid of that icky strcpy ;-;
         strcpy(symbols[symbol_counts].name, buffer[1]);
-        strcpy(symbols[symbol_counts].type, buffer[0]);
+        if (strcasecmp(buffer[0], "something") == 0)
+          strcpy(symbols[symbol_counts].type, "int");
+        else 
+          strcpy(symbols[symbol_counts].type, buffer[0]);
         symbols[symbol_counts++].offset = current_sp;
         fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[3], current_sp);
       }
@@ -165,10 +185,20 @@ int main(int argc, char **argv) {
           fprintf(stderr, "Something went wrong: Unknown variable.\n\tLine: %d\n\t'%s'\n", line_count, buffer[1]);
           return -1;
         }
-        fprintf(output, "lw  $t0, %d($sp)\naddi $t0, $t0, ", offset);
-        if (buffer[1][0] == '-')
-          fputc('-', output);
-        fprintf(output, "%s\nsw  $t0, %d($sp)\n", buffer[2], offset);
+        fprintf(output, "lw  $t0, %d($sp)", offset);
+        unsigned other_offset = getVariableOffset(buffer[2]);
+        if (other_offset != -1) {
+          fprintf(output, "\nlw  $t1, %d($sp)\n", other_offset);
+          if (buffer[1][0] == '-')
+            fputs("sub ", output);
+          else fputs("add ", output);
+          fprintf(output, "$t0, $t0, $t1\nsw  $t0, %d($sp)\n", offset);
+        } else {
+          fprintf(output, "\naddi $t0, $t0, ");
+          if (buffer[1][0] == '-')
+            fputc('-', output);
+          fprintf(output, "%s\nsw  $t0, %d($sp)\n", buffer[2], offset);
+        }
       }
       else if (wrd == 2 && buffer[1][0] == '=') {                 // variable set
         unsigned offset = getVariableOffset(buffer[0]);
@@ -176,7 +206,12 @@ int main(int argc, char **argv) {
           fprintf(stderr, "Something went wrong: Unknown variable.\n\tLine: %d\n\t'%s'\n", line_count, buffer[0]);
           return -1;
         }
-        fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[2], offset);
+        unsigned other_offset = getVariableOffset(buffer[2]);
+        if (other_offset != -1) {
+          fprintf(output, "lw  $t0, %d($sp)\nsw  $t0, %d($sp)\n", other_offset, offset);
+        } else {
+          fprintf(output, "ori $t0, $zero, %s\nsw  $t0, %d($sp)\n", buffer[2], offset);
+        }
       }
       else {
         fprintf(stderr, "Something went wrong: Unrecognizable Syntax.\n\tLine: %d\n\t", line_count);

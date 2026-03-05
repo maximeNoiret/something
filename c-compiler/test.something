@@ -1,14 +1,15 @@
-# test loop
+something multiplicand = 3;
+int multiplier = 5;
 
-int var = 10;
+something i = 0;
 
 loop:
-print var;
-if var end end loop_start;
+if multiplier end end loop_start;
 loop_start:
-var - 1;
+i + multiplicand;
+multiplier - 1;
 goto loop;
 
 end:
-var + 5;
+print i;
 exit;
